@@ -29,9 +29,21 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW); // start OFF
+
 }
 
 void loop() {
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    if (Serial.available() > 0) {
+    String data = Serial.readStringUntil('\n'); // read a line
+    Serial.print("Received: ");
+    Serial.println(data);
+
+    // Turn on LED for 500ms to indicate data received
+    digitalWrite(LED_PIN, HIGH);
+    delay(500);
+    digitalWrite(LED_PIN, LOW);
+  }
 
 
 
@@ -40,6 +52,55 @@ void loop() {
 
     //analogWrite(motorPins[i], vibrationPWM[level]);
     //correct one for vibration
+
+    // testing range
+    if (i == 0 && distance <= 20 && distance >= 0){
+      analogWrite(BUZZER_PIN, 50);
+      delay(800);
+      analogWrite(BUZZER_PIN, 0);
+    }
+
+    // Debug output
+    Serial.print("Sensor ");
+    Serial.print(i);
+    Serial.print(": Distance=");
+    Serial.print(distance);
+    Serial.print(" cm | Level=");
+    Serial.println(level);
+    if (Serial.available()) {
+      String data = Serial.readStringUntil('\n'); // read one line
+      parseCameraData(data, cam);                 // fill cam[] array
+    }
+
+    // Debug print
+    for (int i = 0; i < NUM_SENSORS; i++) {
+      Serial.print("Camera "); 
+      Serial.print(i); 
+      Serial.print(": "); 
+      Serial.println(cam[i]);
+    }
+  }
+
+  Serial.println("--------------------");
+  delay(1000); // helps reduce ultrasonic interference
+}
+
+// -------------------- FUNCTIONS --------------------
+
+// Parses a string like "1,0,1" into cam[] array
+void parseCameraData(String data, int cam[]) {
+  int lastIndex = 0;
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    int commaIndex = data.indexOf(',', lastIndex);
+    String value;
+    if (commaIndex == -1) { 
+      value = data.substring(lastIndex); // last value
+    } else {
+      value = data.substring(lastIndex, commaIndex);
+    }
+    cam[i] = value.toInt();
+    lastIndex = commaIndex + 1;
+  }
 }
 
 long getDistanceCM(int trigPin, int echoPin) {
@@ -60,6 +121,4 @@ int getVibrationLevel(long distance) {
   else if (distance > 66) return 1;
   else if (distance > 33) return 2;
   else return 3;
-}
-
 }
