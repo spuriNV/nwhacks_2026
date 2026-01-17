@@ -1,3 +1,5 @@
+import os
+os.environ['PATH'] += r";C:\Program Files\GStreamer\1.0\msvc_x86_64\bin"
 import cv2
 
 # Replace with your Windows GStreamer bin path if needed
