@@ -4,9 +4,10 @@ import cv2
 
 # Replace with your Windows GStreamer bin path if needed
 pipeline = (
-    'udpsrc port=5000 caps="application/x-rtp,media=video,encoding-name=JPEG,payload=26" ! '
+    'udpsrc port=5000 caps=application/x-rtp,media=video,encoding-name=JPEG,payload=26 ! '
     'rtpjpegdepay ! jpegdec ! videoconvert ! appsink'
 )
+
 
 cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
 if not cap.isOpened():
