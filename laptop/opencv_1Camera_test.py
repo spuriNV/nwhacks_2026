@@ -5,6 +5,7 @@ import socket
 import json
 import base64
 from pathlib import Path
+from datetime import datetime, timezone
 from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
 
@@ -14,6 +15,12 @@ from flask_socketio import SocketIO
 ENABLE_YOLO = True
 MODEL_PATH = Path(__file__).parent / "models" / "yolo11n.pt"
 CONFIDENCE_THRESHOLD = 0.75
+
+# ------------------------------
+# MongoDB Configuration
+# ------------------------------
+ENABLE_MONGODB = True
+MONGO_SAVE_INTERVAL = 1.0  # Save detections every N seconds (avoid flooding DB)
 
 # COCO class IDs for desired objects
 ALLOWED_CLASSES = {
@@ -48,6 +55,17 @@ detections = {}       # YOLO detections per camera (bounding boxes, not annotate
 locks = {}
 detection_locks = {}
 running = True
+
+# MongoDB client
+mongo_client = None
+if ENABLE_MONGODB:
+    try:
+        from db import get_mongo_client
+        mongo_client = get_mongo_client()
+        print("MongoDB connected")
+    except Exception as e:
+        print(f"MongoDB connection failed: {e}")
+        ENABLE_MONGODB = False
 
 # Flask app
 app = Flask(__name__)
@@ -110,6 +128,8 @@ def yolo_loop(cam_id, display_name, model):
     frame_count = 0
     last_fps_time = time.time()
     fps_frame_count = 0
+    last_mongo_save = time.time()
+    mongo_save_count = 0
 
     while running:
         with locks[cam_id]:
@@ -145,9 +165,34 @@ def yolo_loop(cam_id, display_name, model):
                     "class_name": cls_name,
                 })
 
-        # Store detections
+        # Store detections for web broadcast
         with detection_locks[cam_id]:
             detections[cam_id] = detection_data
+
+        # Save to MongoDB at configured interval
+        if ENABLE_MONGODB and mongo_client and detection_data:
+            if time.time() - last_mongo_save >= MONGO_SAVE_INTERVAL:
+                try:
+                    timestamp = datetime.now(timezone.utc)
+                    mongo_docs = []
+                    for det in detection_data:
+                        mongo_docs.append({
+                            "object_name": det["class_name"],
+                            "accuracy": det["confidence"],
+                            "camera_id": cam_id,
+                            "bounding_box": {
+                                "x1": det["x1"],
+                                "y1": det["y1"],
+                                "x2": det["x2"],
+                                "y2": det["y2"]
+                            },
+                            "timestamp": timestamp
+                        })
+                    mongo_client.insert_yolo_detections_batch(mongo_docs)
+                    mongo_save_count += len(mongo_docs)
+                    last_mongo_save = time.time()
+                except Exception as e:
+                    print(f"   [YOLO-{display_name}] MongoDB save error: {e}")
 
         frame_count += 1
         fps_frame_count += 1
@@ -155,7 +200,7 @@ def yolo_loop(cam_id, display_name, model):
         elapsed = time.time() - last_fps_time
         if elapsed > 5.0:
             fps = fps_frame_count / elapsed
-            print(f"   [YOLO-{display_name}] FPS: {fps:.1f}, Detections: {len(detection_data)}")
+            print(f"   [YOLO-{display_name}] FPS: {fps:.1f}, Detections: {len(detection_data)}, Saved to DB: {mongo_save_count}")
             fps_frame_count = 0
             last_fps_time = time.time()
 
