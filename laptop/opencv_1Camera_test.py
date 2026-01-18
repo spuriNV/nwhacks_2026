@@ -14,7 +14,7 @@ from flask_socketio import SocketIO
 # ------------------------------
 ENABLE_YOLO = True
 MODEL_PATH = Path(__file__).parent / "models" / "yolo11n.pt"
-CONFIDENCE_THRESHOLD = 0.75
+CONFIDENCE_THRESHOLD = 0.25
 
 # ------------------------------
 # MongoDB Configuration
@@ -24,15 +24,41 @@ MONGO_SAVE_INTERVAL = 1.0  # Save detections every N seconds (avoid flooding DB)
 
 # COCO class IDs for desired objects
 ALLOWED_CLASSES = {
+    # People
     0: "person",
+    # Vehicles
+    1: "bicycle",
+    2: "car",
+    3: "motorcycle",
+    5: "bus",
+    7: "truck",
+    # Animals
+    15: "cat",
+    16: "dog",
+    # Personal items
     24: "backpack",
+    25: "umbrella",
     26: "handbag",
+    28: "suitcase",
+    # Kitchen/Dining
     39: "bottle",
+    41: "cup",
+    45: "bowl",
+    # Furniture
     56: "chair",
+    57: "couch",
+    59: "bed",
     60: "dining table",
+    # Electronics
     62: "tv",
     63: "laptop",
+    65: "remote",
+    66: "keyboard",
     67: "cell phone",
+    # Other useful
+    73: "book",
+    74: "clock",
+    76: "scissors",
 }
 
 # ------------------------------
