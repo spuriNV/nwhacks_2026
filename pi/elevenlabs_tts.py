@@ -26,7 +26,7 @@ _env_path = Path(__file__).parent / ".env"
 load_dotenv(_env_path)
 from typing import List, Tuple, Optional
 from elevenlabs.client import ElevenLabs
-from elevenlabs import play
+from elevenlabs import play as elevenlabs_play
 
 
 # Camera names mapped to indices
@@ -129,7 +129,7 @@ def announce_detections(
         output_format="mp3_44100_128",
     )
 
-    play(audio)
+    elevenlabs_play(audio)
     return True
 
 
