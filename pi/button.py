@@ -60,7 +60,7 @@ class Button:
 if __name__ == "__main__":
     import time
 
-    button = Button(pin=17, debounce_ms=20)
+    button = Button(pin=25, debounce_ms=20)
     button.start()
 
     try:

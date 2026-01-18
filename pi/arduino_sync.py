@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from arduinoSerial import ArduinoSerialReader
 from pi_client import LaptopClient
 from button import Button
-from elevenlabs import announce_detections
+from elevenlabs_tts import announce_detections
 
 
 class ArduinoSync:
@@ -28,9 +28,8 @@ class ArduinoSync:
         self.client = LaptopClient(base_url=server_url)
         self.button = Button(pin=25, debounce_ms=20)
         
-        self.last_sensor_time = datetime.now(timezone.utc)
-        self.last_db_poll_time = datetime.now(timezone.utc)
         self.last_gpio_button_count = 0
+        self.last_control_payload = None  # track last sent control tuple
         
         self.running = False
         self.upload_thread = None
@@ -141,31 +140,23 @@ class ArduinoSync:
 
     def _download_loop(self):
         """
-        Thread: Periodically poll server for new data and send to Arduino.
+        Thread: Poll server for latest detections and send control tuple to Arduino.
+        Uses pi_client.get_latest_detections() and maps detection presence to obj flags.
+        Control payload: [obj0,obj1,obj2, enable=1, pattern=0]
         """
         while self.running:
             try:
-                current_time = datetime.now(timezone.utc)
-                
-                # TODO: Replace with actual server API call to fetch latest data
-                # Example: server_data = self.client.get_latest_data(since=self.last_db_poll_time)
-                # For now, this is a placeholder structure:
-                
-                # Check if new data exists from server
-                # if server_data and server_data.get('timestamp'):
-                #     data_timestamp = datetime.fromisoformat(server_data['timestamp'])
-                #     
-                #     if data_timestamp > self.last_db_poll_time:
-                #         # Format and send to Arduino
-                #         # Example: camera data as "1,0,1"
-                #         camera_data = server_data.get('camera', [0, 0, 0])
-                #         message = f"{camera_data[0]},{camera_data[1]},{camera_data[2]}"
-                #         self.arduino.write_line(message)
-                #         
-                #         self.last_db_poll_time = data_timestamp
-                
-                time.sleep(2)  # Poll every 2 seconds
-                
+                detections = self.client.get_latest_detections()
+                if detections is not None:
+                    obj_flags = [1 if d else 0 for d in detections]
+                    payload = (*obj_flags, 1, 0)  # enable=1, pattern=0 by default
+
+                    if payload != self.last_control_payload:
+                        self.arduino.send_control_command(obj_flags, enable=1, pattern=0)
+                        self.last_control_payload = payload
+
+                time.sleep(2)
+
             except Exception as e:
                 print(f"Error in download loop: {e}")
                 time.sleep(2)
