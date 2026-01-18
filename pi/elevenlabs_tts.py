@@ -1,0 +1,176 @@
+"""
+ElevenLabs Text-to-Speech module for announcing detected objects.
+
+Usage:
+    from elevenlabs_tts import announce_detections
+
+    # Detection format: [(object_name, distance_metres), ...]
+    # Index 0 = front-left, 1 = front-right, 2 = back-centre
+    detections = [("person", 2.5), None, ("car", 5.0)]
+    announce_detections(detections)
+
+Requirements:
+    pip install elevenlabs python-dotenv
+
+Setup:
+    Add your API key to pi/.env file:
+    ELEVENLABS_API_KEY=your_key_here
+"""
+
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from the same directory as this script
+_env_path = Path(__file__).parent / ".env"
+load_dotenv(_env_path)
+from typing import List, Tuple, Optional
+from elevenlabs.client import ElevenLabs
+from elevenlabs_tts import play
+
+
+# Camera names mapped to indices
+CAMERA_NAMES = ["front-left", "front-right", "back-centre"]
+
+# Default voice ID (George - clear male voice)
+DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"
+
+# Default model
+DEFAULT_MODEL_ID = "eleven_multilingual_v2"
+
+
+def get_client(api_key: Optional[str] = None) -> ElevenLabs:
+    """
+    Get an ElevenLabs client.
+
+    Args:
+        api_key: API key. If None, uses ELEVENLABS_API_KEY env var.
+
+    Returns:
+        ElevenLabs client instance
+    """
+    key = api_key or os.environ.get("ELEVENLABS_API_KEY")
+    if not key:
+        raise ValueError(
+            "API key required. Set ELEVENLABS_API_KEY env var or pass api_key parameter."
+        )
+    return ElevenLabs(api_key=key)
+
+
+def build_announcement_text(
+    detections: List[Optional[Tuple[str, float]]]
+) -> Optional[str]:
+    """
+    Build announcement text from detections.
+
+    Args:
+        detections: List of 3 elements (one per camera).
+                   Each element is either None (no detection) or
+                   a tuple of (object_name, distance_metres).
+                   Index 0 = front-left, 1 = front-right, 2 = back-centre
+
+    Returns:
+        Announcement string, or None if no detections
+    """
+    if len(detections) != 3:
+        raise ValueError("Expected exactly 3 detection entries (one per camera)")
+
+    announcements = []
+
+    for i, detection in enumerate(detections):
+        if detection is not None:
+            obj_name, distance = detection
+            camera_name = CAMERA_NAMES[i]
+            announcements.append(
+                f"I see {obj_name} on {camera_name} {distance:.1f} metres away"
+            )
+
+    if not announcements:
+        return None
+
+    return ". ".join(announcements) + "."
+
+
+def announce_detections(
+    detections: List[Optional[Tuple[str, float]]],
+    api_key: Optional[str] = None,
+    voice_id: str = DEFAULT_VOICE_ID,
+    model_id: str = DEFAULT_MODEL_ID
+) -> bool:
+    """
+    Announce detected objects via text-to-speech.
+
+    Args:
+        detections: List of 3 elements (one per camera).
+                   Each element is either None (no detection) or
+                   a tuple of (object_name, distance_metres).
+                   Index 0 = front-left, 1 = front-right, 2 = back-centre
+        api_key: ElevenLabs API key (uses env var if not provided)
+        voice_id: Voice to use
+        model_id: Model to use
+
+    Returns:
+        True if audio was played, False if no detections to announce
+    """
+    text = build_announcement_text(detections)
+
+    if text is None:
+        print("No detections to announce")
+        return False
+
+    print(f"Announcing: {text}")
+
+    client = get_client(api_key)
+
+    audio = client.text_to_speech.convert(
+        text=text,
+        voice_id=voice_id,
+        model_id=model_id,
+        output_format="mp3_44100_128",
+    )
+
+    play(audio)
+    return True
+
+
+def speak_text(
+    text: str,
+    api_key: Optional[str] = None,
+    voice_id: str = DEFAULT_VOICE_ID,
+    model_id: str = DEFAULT_MODEL_ID
+) -> None:
+    """
+    Speak arbitrary text.
+
+    Args:
+        text: Text to speak
+        api_key: ElevenLabs API key (uses env var if not provided)
+        voice_id: Voice to use
+        model_id: Model to use
+    """
+    client = get_client(api_key)
+
+    audio = client.text_to_speech.convert(
+        text=text,
+        voice_id=voice_id,
+        model_id=model_id,
+        output_format="mp3_44100_128",
+    )
+
+    play(audio)
+
+
+# Example usage
+if __name__ == "__main__":
+    # Example detections: person on front-left at 2.5m, car on back-centre at 5m
+    example_detections = [
+        ("person", 2.5),   # front-left
+        None,              # front-right (no detection)
+        ("car", 5.0),      # back-centre
+    ]
+
+    print("Testing announcement...")
+    print(f"Text: {build_announcement_text(example_detections)}")
+
+    # Uncomment to actually play audio (requires API key)
+    # announce_detections(example_detections)
