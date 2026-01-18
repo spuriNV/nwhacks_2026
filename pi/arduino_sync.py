@@ -118,12 +118,6 @@ class ArduinoSync:
                 "cam1": 2,
                 "cam2": 0,
                 "cam3": 1,
-                1: 0,
-                2: 1,
-                3: 2,
-                1.0: 0,
-                2.0: 1,
-                3.0: 2,
             }
 
             # Build detections with camera_id and distance
@@ -133,6 +127,7 @@ class ArduinoSync:
                 if server_det is not None:
                     object_name, camera_id = server_det
                     arduino_idx = CAMERA_TO_ARDUINO_INDEX.get(camera_id, 0)
+                    print(f"[DEBUG] Mapping camera_id {camera_id} to Arduino index {arduino_idx}")
                     distance_cm = distances_cm[arduino_idx]
                     print(f"[DEBUG] Detection {i}: obj={object_name}, camera_id={camera_id} -> arduino_idx={arduino_idx}, distance={distance_cm}cm ({distance_cm:.2f}cm)")
                     detections.append((object_name, camera_id, distance_cm))
