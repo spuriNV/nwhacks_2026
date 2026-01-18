@@ -53,13 +53,6 @@ void loop() {
     distances[i] = distance;
     vibeLevels[i] = level;
 
-    Serial.print("Sensor ");
-    Serial.print(i);
-    Serial.print(": Distance=");
-    Serial.print(distance);
-    Serial.print(" cm | Level=");
-    Serial.println(level);
-
     if (vibrationEnabled && obj[i] && level > 0) {
       applyVibrationPattern(
         motorPins[i],
