@@ -4,6 +4,7 @@ Reads Arduino sensor data and uploads to server via MongoDB.
 Polls server for new data and sends to Arduino on a separate thread.
 """
 
+from csv import reader
 import threading
 import time
 from datetime import datetime, timezone
@@ -98,8 +99,14 @@ class ArduinoSync:
                 print("Could not fetch detections from server")
                 return
 
-            # Get distances from Arduino (in cm)
-            arduino_data = self.arduino.get_data()
+
+            reader = ArduinoSerialReader(port='/dev/ttyACM0', baudrate=115200)
+            # # Get distances from Arduino (in cm)
+            data = reader.get_data()
+            # d = data['distances']
+            # l = data['levels']
+            arduino_data = data
+            print(f"Distances (cm): [{data[0]:4}, {data[1]:4}, {data[2]:4}]  |  Levels: {l}")
             distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
             print(f"[DEBUG] Arduino distances (cm): {distances_cm}")
 
@@ -127,9 +134,8 @@ class ArduinoSync:
                     object_name, camera_id = server_det
                     arduino_idx = CAMERA_TO_ARDUINO_INDEX.get(camera_id, 0)
                     distance_cm = distances_cm[arduino_idx]
-                    distance_m = distance_cm / 100.0  # Convert cm to metres
-                    print(f"[DEBUG] Detection {i}: obj={object_name}, camera_id={camera_id} -> arduino_idx={arduino_idx}, distance={distance_cm}cm ({distance_m:.2f}m)")
-                    detections.append((object_name, camera_id, distance_m))
+                    print(f"[DEBUG] Detection {i}: obj={object_name}, camera_id={camera_id} -> arduino_idx={arduino_idx}, distance={distance_cm}cm ({distance_cm:.2f}cm)")
+                    detections.append((object_name, camera_id, distance_cm))
                 else:
                     print(f"[DEBUG] Detection {i}: None")
                     detections.append(None)
