@@ -105,10 +105,18 @@ class ArduinoSync:
 
             # Map camera_id to Arduino distance index
             # Configure this based on your wiring!
+            # Supports both string ("cam1") and numeric (1, 1.0) camera IDs
+            # 1 = back, 2 = front-left, 3 = front-right
             CAMERA_TO_ARDUINO_INDEX = {
-                "cam1": 0,  # cam1 uses Arduino sensor 0
-                "cam2": 1,  # cam2 uses Arduino sensor 1
-                "cam3": 2,  # cam3 uses Arduino sensor 2
+                "cam1": 0,
+                "cam2": 1,
+                "cam3": 2,
+                1: 0,
+                2: 1,
+                3: 2,
+                1.0: 0,
+                2.0: 1,
+                3.0: 2,
             }
 
             # Build detections with camera_id and distance

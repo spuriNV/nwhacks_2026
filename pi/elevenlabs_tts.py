@@ -29,10 +29,19 @@ import subprocess
 import tempfile
 
 # Map camera_id from server to human-readable names
+# Supports both string ("cam1") and numeric (1, 1.0) camera IDs
 CAMERA_ID_TO_NAME = {
+    # String keys
     "cam1": "front-left",
-    "cam2": "back-centre",
-    "cam3": "front-right",
+    "cam2": "front-right",
+    "cam3": "back-centre",
+    # Numeric keys (server may return these)
+    1: "front-left",
+    2: "front-right",
+    3: "back-centre",
+    1.0: "front-left",
+    2.0: "front-right",
+    3.0: "back-centre",
 }
 
 def elevenlabs_play(audio):
@@ -204,3 +213,4 @@ if __name__ == "__main__":
 
     # Uncomment to actually play audio (requires API key)
     # announce_detections(example_detections)
+
