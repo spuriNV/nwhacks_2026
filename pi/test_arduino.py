@@ -1,29 +1,35 @@
 """Test script to print Arduino serial data."""
 
 import time
-from arduinoSerial import ArduinoSerialReader
+import serial
 
 def main():
-    reader = ArduinoSerialReader(port='/dev/ttyACM0', baudrate=115200)
-    reader.connect()
+    port = '/dev/ttyACM0'
+    baudrate = 115200
 
-    if not reader.ser:
-        print("Failed to connect to Arduino")
-        return
-
-    print("Connected! Reading Arduino data...")
-    print("Press Ctrl+C to stop\n")
+    print(f"Connecting to {port} at {baudrate} baud...")
 
     try:
+        ser = serial.Serial(port, baudrate, timeout=1)
+        print("Connected! Reading raw serial data...")
+        print("Press Ctrl+C to stop\n")
+        print("-" * 50)
+
         while True:
-            reader.read_and_parse()
-            data = reader.get_data()
-            print(f"Distances (cm): {data['distances']}  |  Levels: {data['levels']}")
-            time.sleep(0.5)
+            if ser.in_waiting > 0:
+                line = ser.readline().decode('utf-8').strip()
+                if line:
+                    print(f"RAW: {line}")
+            time.sleep(0.1)
+
+    except serial.SerialException as e:
+        print(f"Serial error: {e}")
     except KeyboardInterrupt:
         print("\nStopping...")
     finally:
-        reader.disconnect()
+        if 'ser' in locals():
+            ser.close()
+            print("Disconnected")
 
 if __name__ == "__main__":
     main()
