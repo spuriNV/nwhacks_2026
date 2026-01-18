@@ -26,7 +26,7 @@ class ArduinoSync:
         """
         self.arduino = ArduinoSerialReader(port=port, baudrate=baudrate)
         self.client = LaptopClient(base_url=server_url)
-        self.button = Button(pin=17, debounce_ms=20)
+        self.button = Button(pin=7, debounce_ms=20)
         
         self.last_sensor_time = datetime.now(timezone.utc)
         self.last_db_poll_time = datetime.now(timezone.utc)
