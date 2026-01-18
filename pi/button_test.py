@@ -16,7 +16,7 @@ def main():
     print("Press Ctrl+C to stop\n")
     
     # Initialize button on GPIO pin 7 (physical pin 26)
-    button = Button(pin=7, debounce_ms=20)
+    button = Button(pin=25, debounce_ms=20)
     
     # Start monitoring
     button.start()
