@@ -88,6 +88,7 @@ class ArduinoSync:
             # Get object names and camera_ids from server
             # Returns: [(object_name, camera_id), None, ...]
             server_detections = self.client.get_latest_detections()
+            print(f"[DEBUG] Server detections: {server_detections}")
 
             if server_detections is None:
                 print("Could not fetch detections from server")
@@ -96,6 +97,7 @@ class ArduinoSync:
             # Get distances from Arduino (in cm)
             arduino_data = self.arduino.get_data()
             distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
+            print(f"[DEBUG] Arduino distances (cm): {distances_cm}")
 
             # Map camera_id to Arduino distance index
             # Configure this based on your wiring!
@@ -108,13 +110,16 @@ class ArduinoSync:
             # Build detections with camera_id and distance
             # Format for elevenlabs: [(object_name, camera_id, distance_m), ...]
             detections = []
-            for server_det in server_detections:
+            for i, server_det in enumerate(server_detections):
                 if server_det is not None:
                     object_name, camera_id = server_det
                     arduino_idx = CAMERA_TO_ARDUINO_INDEX.get(camera_id, 0)
-                    distance_m = distances_cm[arduino_idx] / 100.0  # Convert cm to metres
+                    distance_cm = distances_cm[arduino_idx]
+                    distance_m = distance_cm / 100.0  # Convert cm to metres
+                    print(f"[DEBUG] Detection {i}: obj={object_name}, camera_id={camera_id} -> arduino_idx={arduino_idx}, distance={distance_cm}cm ({distance_m:.2f}m)")
                     detections.append((object_name, camera_id, distance_m))
                 else:
+                    print(f"[DEBUG] Detection {i}: None")
                     detections.append(None)
 
             # Check if there are any detections

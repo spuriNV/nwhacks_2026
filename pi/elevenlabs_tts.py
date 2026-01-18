@@ -102,13 +102,16 @@ def build_announcement_text(
 
     announcements = []
 
-    for detection in detections:
+    for i, detection in enumerate(detections):
         if detection is not None:
             obj_name, camera_id, distance = detection
             camera_name = CAMERA_ID_TO_NAME.get(camera_id, camera_id)
+            print(f"[DEBUG] Detection {i}: obj={obj_name}, camera_id={camera_id} -> camera_name={camera_name}, distance={distance:.1f}m")
             announcements.append(
                 f"I see {obj_name} on {camera_name} {distance:.1f} metres away"
             )
+        else:
+            print(f"[DEBUG] Detection {i}: None")
 
     if not announcements:
         return None
@@ -136,13 +139,16 @@ def announce_detections(
     Returns:
         True if audio was played, False if no detections to announce
     """
+    print(f"[DEBUG] announce_detections called with: {detections}")
+    print(f"[DEBUG] CAMERA_ID_TO_NAME mapping: {CAMERA_ID_TO_NAME}")
+
     text = build_announcement_text(detections)
 
     if text is None:
         print("No detections to announce")
         return False
 
-    print(f"Announcing: {text}")
+    print(f"[DEBUG] Final announcement text: {text}")
 
     client = get_client(api_key)
 
