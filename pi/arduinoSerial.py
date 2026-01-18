@@ -1,6 +1,5 @@
 import serial
 import time
-import re
 
 class ArduinoSerialReader:
     def __init__(self, port='/dev/ttyACM0', baudrate=115200, timeout=1):
@@ -51,28 +50,34 @@ class ArduinoSerialReader:
         except serial.SerialException as e:
             print(f"Failed to write to Arduino: {e}")
 
+    def send_control_command(self, objs, enable: int, pattern: int):
+        """Send control tuple: 3 object flags, enable flag, pattern (0-3)."""
+        if not self.ser:
+            print("Serial port not connected")
+            return
+        if len(objs) != 3:
+            print("objs must be length 3")
+            return
+        safe_objs = [1 if bool(o) else 0 for o in objs]
+        safe_enable = 1 if bool(enable) else 0
+        safe_pattern = max(0, min(3, int(pattern)))
+        payload = f"{safe_objs[0]},{safe_objs[1]},{safe_objs[2]},{safe_enable},{safe_pattern}"
+        self.write_line(payload)
+
     def _parse_line(self, line):
-        # Parse sensor data: "Sensor 0: Distance=50 cm | Level=2"
-        sensor_match = re.match(r'Sensor (\d+): Distance=(\d+) cm \| Level=(\d+)', line)
-        if sensor_match:
-            sensor_id = int(sensor_match.group(1))
-            distance = int(sensor_match.group(2))
-            level = int(sensor_match.group(3))
-            if 0 <= sensor_id < 3:
-                self.distances[sensor_id] = distance
-                self.levels[sensor_id] = level
-            return
+        # Parse aggregated CSV line: dist0,dist1,dist2,level0,level1,level2
+        if ',' in line:
+            parts = [p for p in line.split(',') if p.strip() != '']
+            if len(parts) == 6:
+                try:
+                    d0, d1, d2, l0, l1, l2 = [int(p) for p in parts]
+                    self.distances = [d0, d1, d2]
+                    self.levels = [l0, l1, l2]
+                    return
+                except ValueError:
+                    pass
 
-        # Parse camera data: "Camera 0: 1"
-        camera_match = re.match(r'Camera (\d+): (\d+)', line)
-        if camera_match:
-            cam_id = int(camera_match.group(1))
-            value = int(camera_match.group(2))
-            if 0 <= cam_id < 3:
-                self.camera[cam_id] = value
-            return
-
-        # Ignore other lines like "--------------------" or "Received: ..."
+        # Ignore other lines like separators
 
     def get_data(self):
         return {
