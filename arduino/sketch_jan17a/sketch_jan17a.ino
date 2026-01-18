@@ -1,18 +1,17 @@
 const int NUM_SENSORS = 3;
 
 // HC-SR04 pins
-int trigPins[NUM_SENSORS]  = {3, 6, 9};
-int echoPins[NUM_SENSORS] = {2, 5, 8};
+int trigPins[NUM_SENSORS]  = {13, 8, 4};//8
+int echoPins[NUM_SENSORS] = {12, 7, 2};//7
 int cam[NUM_SENSORS] = {0, 0, 0}; // store camera data
 
+
 // Vibration motor pins (PWM)
-//int motorPins[NUM_SENSORS] = {11};
-const int BUZZER_PIN = 11;
-const int LED_PIN = 13;
+int motorPins[NUM_SENSORS] = {11, 9, 3};
 
 // Distance thresholds (cm)
-const int levelThresholds[3] = {33, 66, 100};  
-const int vibrationPWM[4] = {0, 85, 170, 255};
+const int levelThresholds[] = {33, 66, 100};  
+const int vibrationPWM[4] = {0, 130, 175, 255};
 
 void setup() {
   Serial.begin(115200);
@@ -22,64 +21,74 @@ void setup() {
     pinMode(echoPins[i], INPUT);
 
     digitalWrite(trigPins[i], LOW);
-    //analogWrite(motorPins[i], 0);
-    digitalWrite(BUZZER_PIN, LOW);
+    analogWrite(motorPins[i], 0);
+    // digitalWrite(BUZZER_PIN, LOW);
   }
   //pinMode(motorPins[0], OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW); // start OFF
 
 }
 
 void loop() {
+  // for (int i = 0; i < NUM_SENSORS; i++) {
+  //   if (Serial.available() > 0) {
+  //   String data = Serial.readStringUntil('\n'); // read a line
+  //   Serial.print("Received: ");
+  //   Serial.println(data);
+
+    // Turn on LED for 500ms to indicate data receive
+  // }
+
   for (int i = 0; i < NUM_SENSORS; i++) {
-    if (Serial.available() > 0) {
-    String data = Serial.readStringUntil('\n'); // read a line
-    Serial.print("Received: ");
-    Serial.println(data);
-
-    // Turn on LED for 500ms to indicate data received
-    digitalWrite(LED_PIN, HIGH);
-    delay(500);
-    digitalWrite(LED_PIN, LOW);
-  }
-
-
 
     long distance = getDistanceCM(trigPins[i], echoPins[i]);
     int level = getVibrationLevel(distance);
 
-    //analogWrite(motorPins[i], vibrationPWM[level]);
-    //correct one for vibration
-
-    // testing range
-    if (i == 0 && distance <= 20 && distance >= 0){
-      analogWrite(BUZZER_PIN, 50);
-      delay(800);
-      analogWrite(BUZZER_PIN, 0);
-    }
-
-    // Debug output
     Serial.print("Sensor ");
     Serial.print(i);
     Serial.print(": Distance=");
     Serial.print(distance);
     Serial.print(" cm | Level=");
     Serial.println(level);
-    if (Serial.available()) {
-      String data = Serial.readStringUntil('\n'); // read one line
-      parseCameraData(data, cam);                 // fill cam[] array
-    }
 
-    // Debug print
-    for (int i = 0; i < NUM_SENSORS; i++) {
-      Serial.print("Camera "); 
-      Serial.print(i); 
-      Serial.print(": "); 
-      Serial.println(cam[i]);
-    }
+    analogWrite(motorPins[i], vibrationPWM[level]);
+    
+
+    delay(60); // prevent ultrasonic crosstalk
   }
+
+    // long distance = getDistanceCM(trigPins[i], echoPins[i]);
+    // int level = getVibrationLevel(distance);
+
+    //analogWrite(motorPins[i], vibrationPWM[level]);
+    //correct one for vibration
+
+    // testing range
+    // if (i == 0 && distance <= 20 && distance >= 0){
+    //   analogWrite(BUZZER_PIN, 50);
+    //   delay(800);
+    //   analogWrite(BUZZER_PIN, 0);
+    // }
+
+    // Debug output
+    // Serial.print("Sensor ");
+    // Serial.print(i);
+    // Serial.print(": Distance=");
+    // Serial.print(distance);
+    // Serial.print(" cm | Level=");
+    // Serial.println(level);
+    // if (Serial.available()) {
+    //   String data = Serial.readStringUntil('\n'); // read one line
+    //   parseCameraData(data, cam);                 // fill cam[] array
+    // }
+
+    // // Debug cam print
+    // for (int i = 0; i < NUM_SENSORS; i++) {
+    //   Serial.print("Camera "); 
+    //   Serial.print(i); 
+    //   Serial.print(": "); 
+    //   Serial.println(cam[i]);
+    // }
+  // }
 
   Serial.println("--------------------");
   delay(1000); // helps reduce ultrasonic interference
@@ -88,20 +97,20 @@ void loop() {
 // -------------------- FUNCTIONS --------------------
 
 // Parses a string like "1,0,1" into cam[] array
-void parseCameraData(String data, int cam[]) {
-  int lastIndex = 0;
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    int commaIndex = data.indexOf(',', lastIndex);
-    String value;
-    if (commaIndex == -1) { 
-      value = data.substring(lastIndex); // last value
-    } else {
-      value = data.substring(lastIndex, commaIndex);
-    }
-    cam[i] = value.toInt();
-    lastIndex = commaIndex + 1;
-  }
-}
+// void parseCameraData(String data, int cam[]) {
+//   int lastIndex = 0;
+//   for (int i = 0; i < NUM_SENSORS; i++) {
+//     int commaIndex = data.indexOf(',', lastIndex);
+//     String value;
+//     if (commaIndex == -1) { 
+//       value = data.substring(lastIndex); // last value
+//     } else {
+//       value = data.substring(lastIndex, commaIndex);
+//     }
+//     cam[i] = value.toInt();
+//     lastIndex = commaIndex + 1;
+//   }
+// }
 
 long getDistanceCM(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
