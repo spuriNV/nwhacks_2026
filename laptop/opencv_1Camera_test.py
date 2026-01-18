@@ -6,7 +6,7 @@ import json
 import base64
 from pathlib import Path
 from datetime import datetime, timezone
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request, jsonify
 from flask_socketio import SocketIO
 
 # ------------------------------
@@ -263,6 +263,126 @@ def get_detections(cam_id):
         return json.dumps({"error": "Camera not found"}), 404
     with detection_locks[cam_id]:
         return json.dumps(detections.get(cam_id, []))
+
+
+# ------------------------------
+# API Routes for Raspberry Pi
+# ------------------------------
+@app.route('/api/interaction', methods=['POST'])
+def post_interaction():
+    """
+    Receive interaction data (button presses, vibration) from Raspberry Pi.
+
+    Expected JSON body:
+    {
+        "button_id": "BTN_A",        # optional
+        "num_presses": 3,            # optional, defaults to 1
+        "vibration_id": "VIB_1",     # optional
+        "vibration_level": 75        # optional, 0-100
+    }
+    """
+    if not ENABLE_MONGODB or not mongo_client:
+        return jsonify({"error": "MongoDB not connected"}), 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        # Insert interaction into MongoDB
+        interaction_id = mongo_client.insert_interaction(
+            button_id=data.get("button_id"),
+            num_presses=data.get("num_presses"),
+            vibration_id=data.get("vibration_id"),
+            vibration_level=data.get("vibration_level")
+        )
+
+        print(f"[API] Received interaction: {data}")
+        return jsonify({"success": True, "id": interaction_id}), 201
+
+    except Exception as e:
+        print(f"[API] Error saving interaction: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/vibration', methods=['POST'])
+def post_vibration():
+    """
+    Simplified endpoint for vibration data only.
+
+    Expected JSON body:
+    {
+        "vibration_id": "VIB_1",
+        "vibration_level": 75
+    }
+    """
+    if not ENABLE_MONGODB or not mongo_client:
+        return jsonify({"error": "MongoDB not connected"}), 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        vibration_id = data.get("vibration_id", "VIB_DEFAULT")
+        vibration_level = data.get("vibration_level", 0)
+
+        interaction_id = mongo_client.insert_interaction(
+            vibration_id=vibration_id,
+            vibration_level=vibration_level
+        )
+
+        print(f"[API] Received vibration: id={vibration_id}, level={vibration_level}")
+        return jsonify({"success": True, "id": interaction_id}), 201
+
+    except Exception as e:
+        print(f"[API] Error saving vibration: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/button', methods=['POST'])
+def post_button():
+    """
+    Simplified endpoint for button press data only.
+
+    Expected JSON body:
+    {
+        "button_id": "BTN_A",
+        "num_presses": 3
+    }
+    """
+    if not ENABLE_MONGODB or not mongo_client:
+        return jsonify({"error": "MongoDB not connected"}), 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        button_id = data.get("button_id", "BTN_DEFAULT")
+        num_presses = data.get("num_presses", 1)
+
+        interaction_id = mongo_client.insert_interaction(
+            button_id=button_id,
+            num_presses=num_presses
+        )
+
+        print(f"[API] Received button press: id={button_id}, presses={num_presses}")
+        return jsonify({"success": True, "id": interaction_id}), 201
+
+    except Exception as e:
+        print(f"[API] Error saving button press: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for the Pi to verify connectivity."""
+    return jsonify({
+        "status": "ok",
+        "mongodb": ENABLE_MONGODB and mongo_client is not None,
+        "yolo": ENABLE_YOLO and model is not None
+    })
 
 
 # ------------------------------
