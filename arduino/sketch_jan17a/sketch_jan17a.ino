@@ -14,7 +14,7 @@ const int levelThresholds[] = {33, 66, 100};
 const int vibrationPWM[4] = {0, 130, 175, 255};
 
 int obj[NUM_SENSORS] = {0, 0, 0};  // YOLO object flags
-bool vibrationEnabled = true;     // enable / disable
+int vibrationEnabled = 1;     // enable / disable
 int vibrationPattern = 0;         // pattern index
 
 
@@ -57,7 +57,16 @@ void loop() {
     Serial.print(" cm | Level=");
     Serial.println(level);
 
-    analogWrite(motorPins[i], vibrationPWM[level]);
+    if (vibrationEnabled && obj[i] && level > 0) {
+      applyVibrationPattern(
+        motorPins[i],
+        vibrationPWM[level],
+        vibrationPattern
+      );
+    } else {
+      analogWrite(motorPins[i], 0);
+    }
+
     
 
     delay(60); // prevent ultrasonic crosstalk
@@ -122,4 +131,43 @@ int getVibrationLevel(long distance) {
   else if (distance > 66) return 1;
   else if (distance > 33) return 2;
   else return 3;
+}
+
+// ----- All Vibration Patterns -----
+void applyVibrationPattern(int motorPin, int pwm, int pattern) {
+  switch (pattern) {
+
+    // Pattern 0: Continuous (distance-controlled)
+    case 0:
+      analogWrite(motorPin, pwm);
+      break;
+
+    // Pattern 1: Heartbeat (thump...pause)
+    case 1:
+      analogWrite(motorPin, pwm);
+      delay(80);
+      analogWrite(motorPin, 0);
+      delay(200);
+      break;
+
+    // Pattern 2: Rapid pulse (urgent)
+    case 2:
+      analogWrite(motorPin, pwm);
+      delay(40);
+      analogWrite(motorPin, 0);
+      delay(40);
+      break;
+
+    // Pattern 3: Double tap (distinct signal)
+    case 3:
+      analogWrite(motorPin, pwm);
+      delay(50);
+      analogWrite(motorPin, 0);
+      delay(50);
+      analogWrite(motorPin, pwm);
+      delay(50);
+      analogWrite(motorPin, 0);
+      delay(200);
+      break;
+  }
 }
