@@ -33,15 +33,15 @@ import tempfile
 CAMERA_ID_TO_NAME = {
     # String keys
     "cam1": "front-left",
-    "cam2": "back-centre",
-    "cam3": "front-right",
+    "cam2": "front-right",
+    "cam3": "back-centre",
     # Numeric keys (server may return these)
-    1: "back-centre",
-    2: "front-left",
-    3: "front-right",
-    1.0: "back-centre",
-    2.0: "front-left",
-    3.0: "front-right",
+    1: "front-left",
+    2: "front-right",
+    3: "back-centre",
+    1.0: "front-left",
+    2.0: "front-right",
+    3.0: "back-centre",
 }
 
 def elevenlabs_play(audio):
