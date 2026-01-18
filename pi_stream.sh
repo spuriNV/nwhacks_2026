@@ -20,7 +20,6 @@ rpicam-vid --camera 1 -t 0 --width 640 --height 480 --framerate 30 \
   udpsink host=$LAPTOP_IP port=5002 &
 
 # USB Camera 3 (Change /dev/video0 if needed)
-<<<<<<< HEAD
 gst-launch-1.0 v4l2src device=/dev/video16 ! \
     video/x-raw,width=640,height=480 ! \
     videoconvert ! jpegenc quality=70 ! rtpjpegpay ! udpsink host=$LAPTOP_IP port=5004 &
