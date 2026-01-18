@@ -4,9 +4,8 @@ ElevenLabs Text-to-Speech module for announcing detected objects.
 Usage:
     from elevenlabs_tts import announce_detections
 
-    # Detection format: [(object_name, distance_metres), ...]
-    # Index 0 = front-left, 1 = front-right, 2 = back-centre
-    detections = [("person", 2.5), None, ("car", 5.0)]
+    # Detection format: [(object_name, camera_id, distance_metres), ...]
+    detections = [("person", "cam1", 2.5), None, ("car", "cam3", 5.0)]
     announce_detections(detections)
 
 Requirements:
@@ -29,10 +28,11 @@ from elevenlabs.client import ElevenLabs
 import subprocess
 import tempfile
 
+# Map camera_id from server to human-readable names
 CAMERA_ID_TO_NAME = {
-    "cam0": "front-left",
-    "cam1": "back-centre",
-    "cam2": "front-right",
+    "cam1": "front-left",
+    "cam2": "back-centre",
+    "cam3": "front-right",
 }
 
 def elevenlabs_play(audio):
@@ -57,10 +57,6 @@ def elevenlabs_play(audio):
         import os
         os.unlink(temp_path)
 
-
-# Camera names mapped to indices
-# Index 0 = front-left, 1 = front-right, 2 = back-centre
-CAMERA_NAMES = ["front-left", "front-right", "back-centre"]
 
 # Default voice ID (George - clear male voice)
 DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"
@@ -96,8 +92,7 @@ def build_announcement_text(
     Args:
         detections: List of 3 elements (one per camera).
                    Each element is either None (no detection) or
-                   a tuple of (object_name, distance_metres).
-                   Index 0 = front-left, 1 = front-right, 2 = back-centre
+                   a tuple of (object_name, camera_id, distance_metres).
 
     Returns:
         Announcement string, or None if no detections
@@ -107,13 +102,16 @@ def build_announcement_text(
 
     announcements = []
 
-    for detection in detections:
+    for i, detection in enumerate(detections):
         if detection is not None:
             obj_name, camera_id, distance = detection
             camera_name = CAMERA_ID_TO_NAME.get(camera_id, camera_id)
+            print(f"[DEBUG] Detection {i}: obj={obj_name}, camera_id={camera_id} -> camera_name={camera_name}, distance={distance:.1f}m")
             announcements.append(
                 f"I see {obj_name} on {camera_name} {distance:.1f} metres away"
             )
+        else:
+            print(f"[DEBUG] Detection {i}: None")
 
     if not announcements:
         return None
@@ -133,8 +131,7 @@ def announce_detections(
     Args:
         detections: List of 3 elements (one per camera).
                    Each element is either None (no detection) or
-                   a tuple of (object_name, distance_metres).
-                   Index 0 = front-left, 1 = front-right, 2 = back-centre
+                   a tuple of (object_name, camera_id, distance_metres).
         api_key: ElevenLabs API key (uses env var if not provided)
         voice_id: Voice to use
         model_id: Model to use
@@ -142,13 +139,16 @@ def announce_detections(
     Returns:
         True if audio was played, False if no detections to announce
     """
+    print(f"[DEBUG] announce_detections called with: {detections}")
+    print(f"[DEBUG] CAMERA_ID_TO_NAME mapping: {CAMERA_ID_TO_NAME}")
+
     text = build_announcement_text(detections)
 
     if text is None:
         print("No detections to announce")
         return False
 
-    print(f"Announcing: {text}")
+    print(f"[DEBUG] Final announcement text: {text}")
 
     client = get_client(api_key)
 
@@ -194,9 +194,9 @@ def speak_text(
 if __name__ == "__main__":
     # Example detections: person on front-left at 2.5m, car on back-centre at 5m
     example_detections = [
-        ("person", "cam0", 2.5),   # front-left
-        None,              # front-right (no detection)
-        ("car", "cam1",5.0),      # back-centre
+        ("person", "cam1", 2.5),   # cam1 = front-left
+        None,                       # cam2 = front-right (no detection)
+        ("car", "cam3", 5.0),       # cam3 = back-centre
     ]
 
     print("Testing announcement...")
