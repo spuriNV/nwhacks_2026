@@ -80,16 +80,32 @@ class ArduinoSync:
 
     def _handle_button_press(self):
         """
-        Handle button press: fetch latest detections and announce via ElevenLabs.
+        Handle button press: fetch object names from server, distances from Arduino,
+        and announce via ElevenLabs.
         """
         print("Button pressed - fetching detections...")
         try:
-            # Get latest detections from server
-            detections = self.client.get_latest_detections()
+            # Get object names from server (cam1, cam2, cam3)
+            server_detections = self.client.get_latest_detections()
 
-            if detections is None:
+            if server_detections is None:
                 print("Could not fetch detections from server")
                 return
+
+            # Get distances from Arduino (in cm, convert to metres)
+            arduino_data = self.arduino.get_data()
+            distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
+
+            # Build detections with real distances from Arduino
+            # Index mapping: 0=front-left, 1=front-right, 2=back-centre
+            detections = []
+            for i, server_det in enumerate(server_detections):
+                if server_det is not None:
+                    object_name = server_det[0]  # Get object name from server
+                    distance_m = distances_cm[i] / 100.0  # Convert cm to metres
+                    detections.append((object_name, distance_m))
+                else:
+                    detections.append(None)
 
             # Check if there are any detections
             has_detections = any(d is not None for d in detections)

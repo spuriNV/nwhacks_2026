@@ -54,7 +54,8 @@ def elevenlabs_play(audio):
 
 
 # Camera names mapped to indices
-CAMERA_NAMES = [ "back-centre", "front-left", "front-right"]
+# Index 0 = front-left, 1 = front-right, 2 = back-centre
+CAMERA_NAMES = ["front-left", "front-right", "back-centre"]
 
 # Default voice ID (George - clear male voice)
 DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"
