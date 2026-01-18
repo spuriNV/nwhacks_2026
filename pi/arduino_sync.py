@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 from arduinoSerial import ArduinoSerialReader
 from pi_client import LaptopClient
+from elevenlabs import announce_detections
 
 
 class ArduinoSync:
@@ -72,6 +73,32 @@ class ArduinoSync:
         self.arduino.disconnect()
         print("Arduino Sync stopped")
 
+    def _handle_button_press(self):
+        """
+        Handle button press: fetch latest detections and announce via ElevenLabs.
+        """
+        print("Button pressed - fetching detections...")
+        try:
+            # Get latest detections from server
+            detections = self.client.get_latest_detections()
+
+            if detections is None:
+                print("Could not fetch detections from server")
+                return
+
+            # Check if there are any detections
+            has_detections = any(d is not None for d in detections)
+            if not has_detections:
+                print("No objects detected by cameras")
+                return
+
+            # Announce detections via ElevenLabs TTS
+            print(f"Announcing detections: {detections}")
+            announce_detections(detections)
+
+        except Exception as e:
+            print(f"Error handling button press: {e}")
+
     def _upload_loop(self):
         """
         Thread: Continuously read Arduino data and upload to server.
@@ -92,15 +119,11 @@ class ArduinoSync:
                 current_button_count = data['button_presses']
                 if current_button_count != self.last_button_count:
                     num_presses = current_button_count - self.last_button_count
-                    
-                    # ==========================================
-                    # PROCESS BUTTON PRESSES HERE
-                    # ==========================================
-                    # Example: Call your function when button is pressed
-                    # if num_presses > 0:
-                    #     handle_button_press(num_presses)
-                    # ==========================================
-                    
+
+                    # Trigger ElevenLabs voice announcement on button press
+                    if num_presses > 0:
+                        self._handle_button_press()
+
                     self.client.send_button_press("BUTTON_MAIN", num_presses)
                     self.last_button_count = current_button_count
                 

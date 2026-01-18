@@ -409,6 +409,44 @@ def health_check():
     })
 
 
+@app.route('/api/detections/latest', methods=['GET'])
+def get_latest_detections_api():
+    """
+    Get the most recent detection for each camera.
+
+    Returns JSON:
+    {
+        "cam1": {"object_name": "person", "accuracy": 0.95, ...} or null,
+        "cam2": {"object_name": "car", "accuracy": 0.87, ...} or null,
+        "cam3": null
+    }
+    """
+    result = {}
+
+    # First try in-memory detections (most recent, real-time)
+    for cam_id in streams.keys():
+        with detection_locks[cam_id]:
+            cam_detections = detections.get(cam_id, [])
+
+        if cam_detections:
+            # Get the detection with highest confidence
+            best = max(cam_detections, key=lambda d: d["confidence"])
+            result[cam_id] = {
+                "object_name": best["class_name"],
+                "accuracy": best["confidence"],
+                "bounding_box": {
+                    "x1": best["x1"],
+                    "y1": best["y1"],
+                    "x2": best["x2"],
+                    "y2": best["y2"]
+                }
+            }
+        else:
+            result[cam_id] = None
+
+    return jsonify(result)
+
+
 # ------------------------------
 # Initialize YOLO
 # ------------------------------

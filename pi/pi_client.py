@@ -11,7 +11,7 @@ Requirements:
 import requests
 import time
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Dict, List, Tuple
 
 # ------------------------------
 # Configuration
@@ -156,6 +156,43 @@ class LaptopClient:
         except requests.exceptions.RequestException as e:
             print(f"Error sending interaction: {e}")
             return False
+
+    def get_latest_detections(self) -> Optional[List[Optional[Tuple[str, float]]]]:
+        """
+        Get the latest camera detections from the server.
+
+        Returns:
+            List of 3 elements (one per camera: cam1, cam2, cam3).
+            Each element is either None (no detection) or
+            a tuple of (object_name, distance_placeholder).
+            Returns None if request fails.
+
+        Note: Distance is currently a placeholder (1.0) since the cameras
+        don't have depth sensing. Update this when distance data is available.
+        """
+        try:
+            response = requests.get(
+                f"{self.base_url}/api/detections/latest",
+                timeout=5
+            )
+            if response.ok:
+                data = response.json()
+                # Convert to format expected by elevenlabs: [(obj, dist), None, (obj, dist)]
+                result = []
+                for cam_id in ["cam1", "cam2", "cam3"]:
+                    detection = data.get(cam_id)
+                    if detection and detection.get("object_name"):
+                        # TODO: Replace 1.0 with actual distance when available
+                        result.append((detection["object_name"], 1.0))
+                    else:
+                        result.append(None)
+                return result
+            else:
+                print(f"Failed to get detections: {response.text}")
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting detections: {e}")
+            return None
 
 
 # ------------------------------
