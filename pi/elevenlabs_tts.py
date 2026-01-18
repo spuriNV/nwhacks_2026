@@ -26,7 +26,31 @@ _env_path = Path(__file__).parent / ".env"
 load_dotenv(_env_path)
 from typing import List, Tuple, Optional
 from elevenlabs.client import ElevenLabs
-from elevenlabs import play as elevenlabs_play
+import subprocess
+import tempfile
+
+
+def elevenlabs_play(audio):
+    """Play audio using system audio player."""
+    # Write audio to temp file and play with aplay
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+        for chunk in audio:
+            f.write(chunk)
+        temp_path = f.name
+
+    try:
+        # Use mpv or ffplay to play mp3, fallback to aplay
+        try:
+            subprocess.run(["mpv", "--no-video", temp_path], check=True, capture_output=True)
+        except FileNotFoundError:
+            try:
+                subprocess.run(["ffplay", "-nodisp", "-autoexit", temp_path], check=True, capture_output=True)
+            except FileNotFoundError:
+                # Convert to wav and use aplay
+                subprocess.run(["ffmpeg", "-i", temp_path, "-f", "wav", "-"], stdout=subprocess.PIPE, check=True)
+    finally:
+        import os
+        os.unlink(temp_path)
 
 
 # Camera names mapped to indices
@@ -157,7 +181,7 @@ def speak_text(
         output_format="mp3_44100_128",
     )
 
-    play(audio)
+    elevenlabs_play(audio)
 
 
 # Example usage
