@@ -268,6 +268,19 @@ def get_detections(cam_id):
 # ------------------------------
 # API Routes for Raspberry Pi
 # ------------------------------
+def parse_timestamp(ts_string):
+    """Parse ISO format timestamp string to datetime object."""
+    if not ts_string:
+        return None
+    try:
+        # Handle ISO format with or without timezone
+        if ts_string.endswith('Z'):
+            ts_string = ts_string[:-1] + '+00:00'
+        return datetime.fromisoformat(ts_string)
+    except (ValueError, TypeError):
+        return None
+
+
 @app.route('/api/interaction', methods=['POST'])
 def post_interaction():
     """
@@ -278,7 +291,8 @@ def post_interaction():
         "button_id": "BTN_A",        # optional
         "num_presses": 3,            # optional, defaults to 1
         "vibration_id": "VIB_1",     # optional
-        "vibration_level": 75        # optional, 0-100
+        "vibration_level": 75,       # optional, 0-100
+        "timestamp": "2024-01-17T12:30:00Z"  # optional, ISO format
     }
     """
     if not ENABLE_MONGODB or not mongo_client:
@@ -289,12 +303,16 @@ def post_interaction():
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
 
+        # Parse timestamp if provided
+        timestamp = parse_timestamp(data.get("timestamp"))
+
         # Insert interaction into MongoDB
         interaction_id = mongo_client.insert_interaction(
             button_id=data.get("button_id"),
             num_presses=data.get("num_presses"),
             vibration_id=data.get("vibration_id"),
-            vibration_level=data.get("vibration_level")
+            vibration_level=data.get("vibration_level"),
+            timestamp=timestamp
         )
 
         print(f"[API] Received interaction: {data}")
@@ -313,7 +331,8 @@ def post_vibration():
     Expected JSON body:
     {
         "vibration_id": "VIB_1",
-        "vibration_level": 75
+        "vibration_level": 75,
+        "timestamp": "2024-01-17T12:30:00Z"  # optional, ISO format
     }
     """
     if not ENABLE_MONGODB or not mongo_client:
@@ -326,10 +345,12 @@ def post_vibration():
 
         vibration_id = data.get("vibration_id", "VIB_DEFAULT")
         vibration_level = data.get("vibration_level", 0)
+        timestamp = parse_timestamp(data.get("timestamp"))
 
         interaction_id = mongo_client.insert_interaction(
             vibration_id=vibration_id,
-            vibration_level=vibration_level
+            vibration_level=vibration_level,
+            timestamp=timestamp
         )
 
         print(f"[API] Received vibration: id={vibration_id}, level={vibration_level}")
@@ -348,7 +369,8 @@ def post_button():
     Expected JSON body:
     {
         "button_id": "BTN_A",
-        "num_presses": 3
+        "num_presses": 3,
+        "timestamp": "2024-01-17T12:30:00Z"  # optional, ISO format
     }
     """
     if not ENABLE_MONGODB or not mongo_client:
@@ -361,10 +383,12 @@ def post_button():
 
         button_id = data.get("button_id", "BTN_DEFAULT")
         num_presses = data.get("num_presses", 1)
+        timestamp = parse_timestamp(data.get("timestamp"))
 
         interaction_id = mongo_client.insert_interaction(
             button_id=button_id,
-            num_presses=num_presses
+            num_presses=num_presses,
+            timestamp=timestamp
         )
 
         print(f"[API] Received button press: id={button_id}, presses={num_presses}")
