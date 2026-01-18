@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from arduinoSerial import ArduinoSerialReader
 from pi_client import LaptopClient
 from button import Button
-from elevenlabs import announce_detections
+from elevenlabs_tts import announce_detections
 
 
 class ArduinoSync:
