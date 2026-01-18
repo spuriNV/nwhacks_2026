@@ -97,12 +97,12 @@ class ArduinoSync:
 
 
             reader = ArduinoSerialReader(port='/dev/ttyACM0', baudrate=115200)
-            # Get distances from Arduino (in cm)
+            # # Get distances from Arduino (in cm)
             data = reader.get_data()
-            d = data['distances']
-            l = data['levels']
+            # d = data['distances']
+            # l = data['levels']
             arduino_data = data
-            distances_cm = arduino_data[d[0], d[1], d[2]]  # [dist0, dist1, dist2]
+            distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
             print(f"[DEBUG] Arduino distances (cm): {distances_cm}")
 
             # Map camera_id to Arduino distance index
