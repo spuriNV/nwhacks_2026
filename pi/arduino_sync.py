@@ -102,6 +102,7 @@ class ArduinoSync:
             # d = data['distances']
             # l = data['levels']
             arduino_data = data
+            print(f"Distances (cm): [{data[0]:4}, {data[1]:4}, {data[2]:4}]  |  Levels: {l}")
             distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
             print(f"[DEBUG] Arduino distances (cm): {distances_cm}")
 
