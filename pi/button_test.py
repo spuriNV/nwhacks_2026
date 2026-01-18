@@ -12,10 +12,10 @@ from button import Button
 
 def main():
     print("=== Button Test ===")
-    print("Testing GPIO button on pin 7 with 20ms debounce")
+    print("Testing GPIO button on pin 7 (GPIO7) with 20ms debounce")
     print("Press Ctrl+C to stop\n")
     
-    # Initialize button on GPIO pin 7
+    # Initialize button on GPIO pin 7 (physical pin 26)
     button = Button(pin=7, debounce_ms=20)
     
     # Start monitoring
