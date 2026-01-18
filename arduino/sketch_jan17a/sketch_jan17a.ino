@@ -13,6 +13,11 @@ int motorPins[NUM_SENSORS] = {11, 9, 3};
 const int levelThresholds[] = {33, 66, 100};  
 const int vibrationPWM[4] = {0, 130, 175, 255};
 
+int obj[NUM_SENSORS] = {0, 0, 0};  // YOLO object flags
+bool vibrationEnabled = true;     // enable / disable
+int vibrationPattern = 0;         // pattern index
+
+
 void setup() {
   Serial.begin(115200);
 
@@ -29,17 +34,19 @@ void setup() {
 }
 
 void loop() {
-  // for (int i = 0; i < NUM_SENSORS; i++) {
-  //   if (Serial.available() > 0) {
-  //   String data = Serial.readStringUntil('\n'); // read a line
-  //   Serial.print("Received: ");
-  //   Serial.println(data);
 
-    // Turn on LED for 500ms to indicate data receive
-  // }
+  if (Serial.available()) {
+    String line = Serial.readStringUntil('\n');
+    parseSerialCommand(line);
+  }
+
+  int distances[NUM_SENSORS] = {0, 0, 0};
+  int vibeLevels[NUM_SENSORS] = {0, 0, 0}; 
 
   for (int i = 0; i < NUM_SENSORS; i++) {
-
+    //first 3 = object boolean from yolo
+    //next 3 enable/disable vibration motors(0 or 1, boolean), vibration pattern(0-3) - integer
+    //[obj 1, obj 2, obj 3, enable/disable, vibration pattern]
     long distance = getDistanceCM(trigPins[i], echoPins[i]);
     int level = getVibrationLevel(distance);
 
@@ -56,61 +63,46 @@ void loop() {
     delay(60); // prevent ultrasonic crosstalk
   }
 
-    // long distance = getDistanceCM(trigPins[i], echoPins[i]);
-    // int level = getVibrationLevel(distance);
-
-    //analogWrite(motorPins[i], vibrationPWM[level]);
-    //correct one for vibration
-
-    // testing range
-    // if (i == 0 && distance <= 20 && distance >= 0){
-    //   analogWrite(BUZZER_PIN, 50);
-    //   delay(800);
-    //   analogWrite(BUZZER_PIN, 0);
-    // }
-
-    // Debug output
-    // Serial.print("Sensor ");
-    // Serial.print(i);
-    // Serial.print(": Distance=");
-    // Serial.print(distance);
-    // Serial.print(" cm | Level=");
-    // Serial.println(level);
-    // if (Serial.available()) {
-    //   String data = Serial.readStringUntil('\n'); // read one line
-    //   parseCameraData(data, cam);                 // fill cam[] array
-    // }
-
-    // // Debug cam print
-    // for (int i = 0; i < NUM_SENSORS; i++) {
-    //   Serial.print("Camera "); 
-    //   Serial.print(i); 
-    //   Serial.print(": "); 
-    //   Serial.println(cam[i]);
-    // }
-  // }
 
   Serial.println("--------------------");
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    Serial.print(distances[i]);
+    Serial.print(",");
+  }
+
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    Serial.print(vibeLevels[i]);
+    Serial.print(",");
+  }
+
+  Serial.println();
+
   delay(1000); // helps reduce ultrasonic interference
 }
 
 // -------------------- FUNCTIONS --------------------
 
-// Parses a string like "1,0,1" into cam[] array
-// void parseCameraData(String data, int cam[]) {
-//   int lastIndex = 0;
-//   for (int i = 0; i < NUM_SENSORS; i++) {
-//     int commaIndex = data.indexOf(',', lastIndex);
-//     String value;
-//     if (commaIndex == -1) { 
-//       value = data.substring(lastIndex); // last value
-//     } else {
-//       value = data.substring(lastIndex, commaIndex);
-//     }
-//     cam[i] = value.toInt();
-//     lastIndex = commaIndex + 1;
-//   }
-// }
+void parseSerialCommand(String line) {
+  int values[5];
+  int index = 0;
+  int lastPos = 0;
+
+  for (int i = 0; i < line.length() && index < 5; i++) {
+    if (line.charAt(i) == ',' || i == line.length() - 1) {
+      values[index++] = line.substring(lastPos, i + 1).toInt();
+      lastPos = i + 1;
+    }
+  }
+
+  if (index == 5) {
+    for (int i = 0; i < NUM_SENSORS; i++) {
+      obj[i] = values[i];
+    }
+    vibrationEnabled = values[3];
+    vibrationPattern = constrain(values[4], 0, 3);
+  }
+}
+
 
 long getDistanceCM(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
