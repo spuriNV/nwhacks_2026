@@ -50,6 +50,9 @@ void loop() {
     long distance = getDistanceCM(trigPins[i], echoPins[i]);
     int level = getVibrationLevel(distance);
 
+    distances[i] = distance;
+    vibeLevels[i] = level;
+
     Serial.print("Sensor ");
     Serial.print(i);
     Serial.print(": Distance=");
