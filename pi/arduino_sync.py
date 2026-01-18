@@ -30,6 +30,10 @@ class ArduinoSync:
         
         self.last_gpio_button_count = 0
         self.last_control_payload = None  # track last sent control tuple
+        self.vibration_enabled = True  # toggle via double press
+        self.vibration_pattern = 0  # cycle 0-3 via triple press
+        self.last_button_press_time = 0  # for multi-press detection
+        self.double_press_timeout = 0.5  # 500ms window for multi-press
         
         self.running = False
         self.upload_thread = None
@@ -151,10 +155,22 @@ class ArduinoSync:
                 if current_gpio_button_count != self.last_gpio_button_count:
                     num_presses = current_gpio_button_count - self.last_gpio_button_count
                     
-                    # Trigger ElevenLabs voice announcement on button press
-                    if num_presses > 0 and num_presses < 2:
+                    # Detect multi-press within timeout window
+                    current_time = time.time()
+                    if (current_time - self.last_button_press_time) < self.double_press_timeout:
+                        # Triple press: cycle pattern 0->1->2->3->0
+                        if num_presses == 3:
+                            self.vibration_pattern = (self.vibration_pattern + 1) % 4
+                            print(f"Triple press detected! Pattern cycled to: {self.vibration_pattern}")
+                        # Double press: toggle vibration enable
+                        elif num_presses == 2:
+                            self.vibration_enabled = not self.vibration_enabled
+                            print(f"Double press detected! Vibration toggled: {self.vibration_enabled}")
+                    elif num_presses == 1:
+                        # Single press: announce detections
                         self._handle_button_press()
                     
+                    self.last_button_press_time = current_time
                     self.client.send_button_press("BUTTON_MAIN", num_presses)
                     self.last_gpio_button_count = current_gpio_button_count
                 
@@ -167,18 +183,21 @@ class ArduinoSync:
     def _download_loop(self):
         """
         Thread: Poll server for latest detections and send control tuple to Arduino.
-        Uses pi_client.get_latest_detections() and maps detection presence to obj flags.
-        Control payload: [obj0,obj1,obj2, enable=1, pattern=0]
+        Single press: announce detections
+        Double press: toggles vibration_enabled boolean
+        Triple press: cycles vibration_pattern 0->1->2->3->0
+        Control payload: [obj0,obj1,obj2, enable, pattern]
         """
         while self.running:
             try:
                 detections = self.client.get_latest_detections()
                 if detections is not None:
                     obj_flags = [1 if d else 0 for d in detections]
-                    payload = (*obj_flags, 1, 0)  # enable=1, pattern=0 by default
+                    enable = 1 if self.vibration_enabled else 0
+                    payload = (*obj_flags, enable, self.vibration_pattern)
 
                     if payload != self.last_control_payload:
-                        self.arduino.send_control_command(obj_flags, enable=1, pattern=0)
+                        self.arduino.send_control_command(obj_flags, enable=enable, pattern=self.vibration_pattern)
                         self.last_control_payload = payload
 
                 time.sleep(2)
