@@ -29,6 +29,11 @@ from elevenlabs.client import ElevenLabs
 import subprocess
 import tempfile
 
+CAMERA_ID_TO_NAME = {
+    "cam0": "front-left",
+    "cam1": "back-centre",
+    "cam2": "front-right",
+}
 
 def elevenlabs_play(audio):
     """Play audio using system audio player."""
@@ -83,7 +88,7 @@ def get_client(api_key: Optional[str] = None) -> ElevenLabs:
 
 
 def build_announcement_text(
-    detections: List[Optional[Tuple[str, float]]]
+    detections: List[Optional[Tuple[str, str, float]]]
 ) -> Optional[str]:
     """
     Build announcement text from detections.
@@ -102,10 +107,10 @@ def build_announcement_text(
 
     announcements = []
 
-    for i, detection in enumerate(detections):
+    for i, detection in detections:
         if detection is not None:
-            obj_name, distance = detection
-            camera_name = CAMERA_NAMES[i]
+            obj_name, camera_id, distance = detection
+            camera_name = CAMERA_ID_TO_NAME.get(camera_id, camera_id)
             announcements.append(
                 f"I see {obj_name} on {camera_name} {distance:.1f} metres away"
             )

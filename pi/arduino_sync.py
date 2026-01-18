@@ -80,30 +80,40 @@ class ArduinoSync:
 
     def _handle_button_press(self):
         """
-        Handle button press: fetch object names from server, distances from Arduino,
-        and announce via ElevenLabs.
+        Handle button press: fetch object names and camera_ids from server,
+        distances from Arduino, and announce via ElevenLabs.
         """
         print("Button pressed - fetching detections...")
         try:
-            # Get object names from server (cam1, cam2, cam3)
+            # Get object names and camera_ids from server
+            # Returns: [(object_name, camera_id), None, ...]
             server_detections = self.client.get_latest_detections()
 
             if server_detections is None:
                 print("Could not fetch detections from server")
                 return
 
-            # Get distances from Arduino (in cm, convert to metres)
+            # Get distances from Arduino (in cm)
             arduino_data = self.arduino.get_data()
             distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
 
-            # Build detections with real distances from Arduino
-            # Index mapping: 0=front-left, 1=front-right, 2=back-centre
+            # Map camera_id to Arduino distance index
+            # Configure this based on your wiring!
+            CAMERA_TO_ARDUINO_INDEX = {
+                "cam1": 0,  # cam1 uses Arduino sensor 0
+                "cam2": 1,  # cam2 uses Arduino sensor 1
+                "cam3": 2,  # cam3 uses Arduino sensor 2
+            }
+
+            # Build detections with camera_id and distance
+            # Format for elevenlabs: [(object_name, camera_id, distance_m), ...]
             detections = []
-            for i, server_det in enumerate(server_detections):
+            for server_det in server_detections:
                 if server_det is not None:
-                    object_name = server_det[0]  # Get object name from server
-                    distance_m = distances_cm[i] / 100.0  # Convert cm to metres
-                    detections.append((object_name, distance_m))
+                    object_name, camera_id = server_det
+                    arduino_idx = CAMERA_TO_ARDUINO_INDEX.get(camera_id, 0)
+                    distance_m = distances_cm[arduino_idx] / 100.0  # Convert cm to metres
+                    detections.append((object_name, camera_id, distance_m))
                 else:
                     detections.append(None)
 
