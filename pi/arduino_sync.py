@@ -115,9 +115,9 @@ class ArduinoSync:
             # Supports both string ("cam1") and numeric (1, 1.0) camera IDs
             # 1 = back, 2 = front-left, 3 = front-right
             CAMERA_TO_ARDUINO_INDEX = {
-                "cam1": 0,
-                "cam2": 1,
-                "cam3": 2,
+                "cam1": 2,
+                "cam2": 0,
+                "cam3": 1,
                 1: 0,
                 2: 1,
                 3: 2,
