@@ -32,8 +32,8 @@ import tempfile
 # Supports both string ("cam1") and numeric (1, 1.0) camera IDs
 CAMERA_ID_TO_NAME = {
     # String keys
-    "cam1": "back-centre",
-    "cam2": "front-left",
+    "cam1": "front-left",
+    "cam2": "back-centre",
     "cam3": "front-right",
     # Numeric keys (server may return these)
     1: "back-centre",
