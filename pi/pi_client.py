@@ -10,6 +10,8 @@ Requirements:
 """
 import requests
 import time
+from datetime import datetime, timezone
+from typing import Optional
 
 # ------------------------------
 # Configuration
@@ -37,21 +39,31 @@ class LaptopClient:
             print(f"Connection failed: {e}")
             return False
 
-    def send_vibration(self, vibration_id: str, vibration_level: int) -> bool:
+    def send_vibration(
+        self,
+        vibration_id: str,
+        vibration_level: int,
+        timestamp: Optional[datetime] = None
+    ) -> bool:
         """
         Send vibration data to the laptop.
 
         Args:
             vibration_id: Identifier for the vibration sensor (e.g., "VIB_1")
             vibration_level: Vibration intensity 0-100
+            timestamp: Optional datetime for when the event occurred (defaults to now)
         """
         try:
+            data = {
+                "vibration_id": vibration_id,
+                "vibration_level": vibration_level
+            }
+            if timestamp:
+                data["timestamp"] = timestamp.isoformat()
+
             response = requests.post(
                 f"{self.base_url}/api/vibration",
-                json={
-                    "vibration_id": vibration_id,
-                    "vibration_level": vibration_level
-                },
+                json=data,
                 timeout=5
             )
             if response.ok:
@@ -64,21 +76,31 @@ class LaptopClient:
             print(f"Error sending vibration: {e}")
             return False
 
-    def send_button_press(self, button_id: str, num_presses: int = 1) -> bool:
+    def send_button_press(
+        self,
+        button_id: str,
+        num_presses: int = 1,
+        timestamp: Optional[datetime] = None
+    ) -> bool:
         """
         Send button press data to the laptop.
 
         Args:
             button_id: Identifier for the button (e.g., "BTN_A")
             num_presses: Number of times the button was pressed
+            timestamp: Optional datetime for when the event occurred (defaults to now)
         """
         try:
+            data = {
+                "button_id": button_id,
+                "num_presses": num_presses
+            }
+            if timestamp:
+                data["timestamp"] = timestamp.isoformat()
+
             response = requests.post(
                 f"{self.base_url}/api/button",
-                json={
-                    "button_id": button_id,
-                    "num_presses": num_presses
-                },
+                json=data,
                 timeout=5
             )
             if response.ok:
@@ -96,10 +118,18 @@ class LaptopClient:
         button_id: str = None,
         num_presses: int = None,
         vibration_id: str = None,
-        vibration_level: int = None
+        vibration_level: int = None,
+        timestamp: Optional[datetime] = None
     ) -> bool:
         """
         Send combined interaction data (button + vibration) to the laptop.
+
+        Args:
+            button_id: Identifier for the button (e.g., "BTN_A")
+            num_presses: Number of times the button was pressed
+            vibration_id: Identifier for the vibration sensor (e.g., "VIB_1")
+            vibration_level: Vibration intensity 0-100
+            timestamp: Optional datetime for when the event occurred (defaults to now)
         """
         try:
             data = {}
@@ -109,6 +139,8 @@ class LaptopClient:
             if vibration_id:
                 data["vibration_id"] = vibration_id
                 data["vibration_level"] = vibration_level or 0
+            if timestamp:
+                data["timestamp"] = timestamp.isoformat()
 
             response = requests.post(
                 f"{self.base_url}/api/interaction",
