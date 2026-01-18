@@ -95,16 +95,16 @@ class ArduinoSync:
                 print("Could not fetch detections from server")
                 return
 
+            data = self.arduino.get_data()
+            if not data:
+                print("No Arduino data available")
+                return
 
-            reader = ArduinoSerialReader(port='/dev/ttyACM0', baudrate=115200)
-            # # Get distances from Arduino (in cm)
-            data = reader.get_data()
-            # d = data['distances']
-            # l = data['levels']
-            arduino_data = data
-            print(f"Distances (cm): [{data[0]:4}, {data[1]:4}, {data[2]:4}]  |  Levels: {l}")
-            distances_cm = arduino_data['distances']  # [dist0, dist1, dist2]
-            print(f"[DEBUG] Arduino distances (cm): {distances_cm}")
+            d = data['distances']
+            distances_cm = d
+            l = data['levels']
+
+            print(f"Distances (cm): [{d[0]:4}, {d[1]:4}, {d[2]:4}] | Levels: {l}")
 
             # Map camera_id to Arduino distance index
             # Configure this based on your wiring!
