@@ -40,6 +40,18 @@ class ArduinoSerialReader:
         for line in lines:
             self._parse_line(line)
 
+    def write_line(self, message: str):
+        """Send a single line to Arduino with newline termination."""
+        if not self.ser:
+            print("Serial port not connected")
+            return
+        try:
+            if not message.endswith('\n'):
+                message += '\n'
+            self.ser.write(message.encode('utf-8'))
+        except serial.SerialException as e:
+            print(f"Failed to write to Arduino: {e}")
+
     def _parse_line(self, line):
         # Parse sensor data: "Sensor 0: Distance=50 cm | Level=2"
         sensor_match = re.match(r'Sensor (\d+): Distance=(\d+) cm \| Level=(\d+)', line)

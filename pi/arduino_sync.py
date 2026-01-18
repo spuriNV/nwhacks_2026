@@ -113,17 +113,27 @@ class ArduinoSync:
     def _download_loop(self):
         """
         Thread: Periodically poll server for new data and send to Arduino.
-        (Placeholder - implement based on your server API)
         """
         while self.running:
             try:
-                # TODO: Implement server polling for new data
-                # This would depend on your server API endpoints
-                # Example flow:
-                # 1. Call client method to fetch latest data from DB with timestamp
-                # 2. Compare timestamp with last_db_poll_time
-                # 3. If new data exists, send to Arduino via serial
-                # 4. Update last_db_poll_time
+                current_time = datetime.now(timezone.utc)
+                
+                # TODO: Replace with actual server API call to fetch latest data
+                # Example: server_data = self.client.get_latest_data(since=self.last_db_poll_time)
+                # For now, this is a placeholder structure:
+                
+                # Check if new data exists from server
+                # if server_data and server_data.get('timestamp'):
+                #     data_timestamp = datetime.fromisoformat(server_data['timestamp'])
+                #     
+                #     if data_timestamp > self.last_db_poll_time:
+                #         # Format and send to Arduino
+                #         # Example: camera data as "1,0,1"
+                #         camera_data = server_data.get('camera', [0, 0, 0])
+                #         message = f"{camera_data[0]},{camera_data[1]},{camera_data[2]}"
+                #         self.arduino.write_line(message)
+                #         
+                #         self.last_db_poll_time = data_timestamp
                 
                 time.sleep(2)  # Poll every 2 seconds
                 
