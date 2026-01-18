@@ -7,7 +7,7 @@ int cam[NUM_SENSORS] = {0, 0, 0}; // store camera data
 
 
 // Vibration motor pins (PWM)
-int motorPins[NUM_SENSORS] = {11, 9, 3};
+int motorPins[NUM_SENSORS] = {6, 9, 3};
 
 // Distance thresholds (cm)
 const int levelThresholds[] = {33, 66, 100};  
@@ -53,7 +53,7 @@ void loop() {
     distances[i] = distance;
     vibeLevels[i] = level;
 
-    if (vibrationEnabled && obj[i] && level > 0) {
+    if (vibrationEnabled == 1 && obj[i] && level > 0) {
       applyVibrationPattern(
         motorPins[i],
         vibrationPWM[level],
