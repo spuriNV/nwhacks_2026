@@ -213,3 +213,4 @@ if __name__ == "__main__":
 
     # Uncomment to actually play audio (requires API key)
     # announce_detections(example_detections)
+
