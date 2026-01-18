@@ -157,18 +157,15 @@ class LaptopClient:
             print(f"Error sending interaction: {e}")
             return False
 
-    def get_latest_detections(self) -> Optional[List[Optional[Tuple[str, float]]]]:
+    def get_latest_detections(self) -> Optional[List[Optional[Tuple[str, str]]]]:
         """
         Get the latest camera detections from the server.
 
         Returns:
             List of 3 elements (one per camera: cam1, cam2, cam3).
             Each element is either None (no detection) or
-            a tuple of (object_name, distance_placeholder).
+            a tuple of (object_name, camera_id).
             Returns None if request fails.
-
-        Note: Distance is currently a placeholder (1.0) since the cameras
-        don't have depth sensing. Update this when distance data is available.
         """
         try:
             response = requests.get(
@@ -177,13 +174,12 @@ class LaptopClient:
             )
             if response.ok:
                 data = response.json()
-                # Convert to format expected by elevenlabs: [(obj, dist), None, (obj, dist)]
+                # Convert to format: [(obj, cam_id), None, (obj, cam_id)]
                 result = []
                 for cam_id in ["cam1", "cam2", "cam3"]:
                     detection = data.get(cam_id)
                     if detection and detection.get("object_name"):
-                        # TODO: Replace 1.0 with actual distance when available
-                        result.append((detection["object_name"], 1.0))
+                        result.append((detection["object_name"], cam_id))
                     else:
                         result.append(None)
                 return result
