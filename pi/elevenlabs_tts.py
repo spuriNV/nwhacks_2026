@@ -107,7 +107,7 @@ def build_announcement_text(
 
     announcements = []
 
-    for i, detection in detections:
+    for detection in detections:
         if detection is not None:
             obj_name, camera_id, distance = detection
             camera_name = CAMERA_ID_TO_NAME.get(camera_id, camera_id)
@@ -122,7 +122,7 @@ def build_announcement_text(
 
 
 def announce_detections(
-    detections: List[Optional[Tuple[str, float]]],
+    detections: List[Optional[Tuple[str, str, float]]],
     api_key: Optional[str] = None,
     voice_id: str = DEFAULT_VOICE_ID,
     model_id: str = DEFAULT_MODEL_ID
@@ -194,9 +194,9 @@ def speak_text(
 if __name__ == "__main__":
     # Example detections: person on front-left at 2.5m, car on back-centre at 5m
     example_detections = [
-        ("person", 2.5),   # front-left
+        ("person", "cam0", 2.5),   # front-left
         None,              # front-right (no detection)
-        ("car", 5.0),      # back-centre
+        ("car", "cam1",5.0),      # back-centre
     ]
 
     print("Testing announcement...")
