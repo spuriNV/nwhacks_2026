@@ -26,7 +26,7 @@ _env_path = Path(__file__).parent / ".env"
 load_dotenv(_env_path)
 from typing import List, Tuple, Optional
 from elevenlabs.client import ElevenLabs
-from elevenlabs_tts import play
+from elevenlabs import play
 
 
 # Camera names mapped to indices
