@@ -65,19 +65,22 @@ class ArduinoSerialReader:
         self.write_line(payload)
 
     def _parse_line(self, line):
+        # Skip separator lines
+        if line.startswith('-'):
+            return
+
         # Parse aggregated CSV line: dist0,dist1,dist2,level0,level1,level2
         if ',' in line:
-            parts = [p for p in line.split(',') if p.strip() != '']
-            if len(parts) == 6:
+            parts = [p.strip() for p in line.split(',') if p.strip() != '']
+            if len(parts) >= 6:
                 try:
-                    d0, d1, d2, l0, l1, l2 = [int(p) for p in parts]
+                    d0, d1, d2, l0, l1, l2 = [int(p) for p in parts[:6]]
+                    # Store values (-1 means sensor timeout, keep as-is for now)
                     self.distances = [d0, d1, d2]
                     self.levels = [l0, l1, l2]
                     return
-                except ValueError:
-                    pass
-
-        # Ignore other lines like separators
+                except ValueError as e:
+                    print(f"[DEBUG] Parse error: {e} for line: {line}")
 
     def get_data(self):
         return {
