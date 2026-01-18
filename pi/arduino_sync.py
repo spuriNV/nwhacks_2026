@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 from arduinoSerial import ArduinoSerialReader
 from pi_client import LaptopClient
+from button import Button
 from elevenlabs import announce_detections
 
 
@@ -25,10 +26,11 @@ class ArduinoSync:
         """
         self.arduino = ArduinoSerialReader(port=port, baudrate=baudrate)
         self.client = LaptopClient(base_url=server_url)
+        self.button = Button(pin=17, debounce_ms=20)
         
         self.last_sensor_time = datetime.now(timezone.utc)
         self.last_db_poll_time = datetime.now(timezone.utc)
-        self.last_button_count = 0
+        self.last_gpio_button_count = 0
         
         self.running = False
         self.upload_thread = None
@@ -46,6 +48,9 @@ class ArduinoSync:
         # Verify server connection
         if not self.client.check_connection():
             print("Warning: Cannot reach server, but continuing...")
+        
+        # Start button monitor
+        self.button.start()
         
         # Start threads
         self.upload_thread = threading.Thread(target=self._upload_loop, daemon=True)
@@ -70,6 +75,7 @@ class ArduinoSync:
             self.upload_thread.join(timeout=2)
         if self.download_thread:
             self.download_thread.join(timeout=2)
+        self.button.stop()
         self.arduino.disconnect()
         print("Arduino Sync stopped")
 
@@ -115,17 +121,17 @@ class ArduinoSync:
                     vibration_level = data['levels'][i]
                     self.client.send_vibration(vibration_id, vibration_level * 85)
                 
-                # Upload button presses if count changed
-                current_button_count = data['button_presses']
-                if current_button_count != self.last_button_count:
-                    num_presses = current_button_count - self.last_button_count
-
+                # Upload GPIO button presses if count changed
+                current_gpio_button_count = self.button.get_press_count()
+                if current_gpio_button_count != self.last_gpio_button_count:
+                    num_presses = current_gpio_button_count - self.last_gpio_button_count
+                    
                     # Trigger ElevenLabs voice announcement on button press
-                    if num_presses > 0:
+                    if num_presses > 0 and num_presses < 2:
                         self._handle_button_press()
-
+                    
                     self.client.send_button_press("BUTTON_MAIN", num_presses)
-                    self.last_button_count = current_button_count
+                    self.last_gpio_button_count = current_gpio_button_count
                 
                 time.sleep(0.5)  # Update every 500ms
                 

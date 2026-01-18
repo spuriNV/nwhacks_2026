@@ -11,7 +11,6 @@ class ArduinoSerialReader:
         self.distances = [0] * 3
         self.levels = [0] * 3
         self.camera = [0] * 3
-        self.button_presses = 0
 
     def connect(self):
         try:
@@ -73,20 +72,13 @@ class ArduinoSerialReader:
                 self.camera[cam_id] = value
             return
 
-        # Parse button presses: "Button presses: 5"
-        button_match = re.match(r'Button presses: (\d+)', line)
-        if button_match:
-            self.button_presses = int(button_match.group(1))
-            return
-
         # Ignore other lines like "--------------------" or "Received: ..."
 
     def get_data(self):
         return {
             'distances': self.distances.copy(),
             'levels': self.levels.copy(),
-            'camera': self.camera.copy(),
-            'button_presses': self.button_presses
+            'camera': self.camera.copy()
         }
 
     def run(self):
